@@ -2,7 +2,7 @@
 
 # AS16: A 16-bit RISC CPU
 ---
-The **AS16** is a custom 16-bit RISC-style processor core implemented in Verilog for the [wafer.space](https://wafer.space) GF180MCU Run 2 shuttle. It features hardware predication, a 16-entry general register file, and a 6-state FSM controller.
+The **AS16** is a custom 16-bit RISC processor implemented in Verilog for the [wafer.space](https://wafer.space) GF180MCU Run 2 shuttle. It features hardware predication, a 16-entry general register file, and a 6-state FSM controller.
 
 ---
 ## Hardware Interface
