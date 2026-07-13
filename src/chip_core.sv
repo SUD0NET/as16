@@ -1,6 +1,3 @@
-// SPDX-FileCopyrightText: © 2025 XXX Authors
-// SPDX-License-Identifier: Apache-2.0
-
 `default_nettype none
 
 module chip_core #(
@@ -13,90 +10,82 @@ module chip_core #(
     inout  wire VSS,
     `endif
     
-    input  wire clk,       // clock
-    input  wire rst_n,     // reset (active low)
+    input  wire clk,
+    input  wire rst_n,
     
-    input  wire [NUM_INPUT_PADS-1:0] input_in,   // Input value
-    output wire [NUM_INPUT_PADS-1:0] input_pu,   // Pull-up
-    output wire [NUM_INPUT_PADS-1:0] input_pd,   // Pull-down
+    input  wire [NUM_INPUT_PADS-1:0]  input_in,
+    output wire [NUM_INPUT_PADS-1:0]  input_pu,
+    output wire [NUM_INPUT_PADS-1:0]  input_pd,
 
-    input  wire [NUM_BIDIR_PADS-1:0] bidir_in,   // Input value
-    output wire [NUM_BIDIR_PADS-1:0] bidir_out,  // Output value
-    output wire [NUM_BIDIR_PADS-1:0] bidir_oe,   // Output enable
-    output wire [NUM_BIDIR_PADS-1:0] bidir_cs,   // Input type (0=CMOS Buffer, 1=Schmitt Trigger)
-    output wire [NUM_BIDIR_PADS-1:0] bidir_sl,   // Slew rate (0=fast, 1=slow)
-    output wire [NUM_BIDIR_PADS-1:0] bidir_ie,   // Input enable
-    output wire [NUM_BIDIR_PADS-1:0] bidir_pu,   // Pull-up
-    output wire [NUM_BIDIR_PADS-1:0] bidir_pd,   // Pull-down
-
-    inout  wire [NUM_ANALOG_PADS-1:0] analog  // Analog
+    input  wire [NUM_BIDIR_PADS-1:0]  bidir_in,
+    output wire [NUM_BIDIR_PADS-1:0]  bidir_out,
+    output wire [NUM_BIDIR_PADS-1:0]  bidir_oe,
+    output wire [NUM_BIDIR_PADS-1:0]  bidir_cs,
+    output wire [NUM_BIDIR_PADS-1:0]  bidir_sl,
+    output wire [NUM_BIDIR_PADS-1:0]  bidir_ie,
+    output wire [NUM_BIDIR_PADS-1:0]  bidir_pu,
+    output wire [NUM_BIDIR_PADS-1:0]  bidir_pd,
+    
+    inout  wire [NUM_ANALOG_PADS-1:0] analog
 );
 
-    // See here for usage: https://gf180mcu-pdk.readthedocs.io/en/latest/IPs/IO/gf180mcu_fd_io/digital.html
-    
-    // Disable pull-up and pull-down for input
-    assign input_pu = '0;
-    assign input_pd = '0;
+    wire [15:0] cpu_datain;
+    wire [15:0] cpu_dataout;
+    wire [15:0] cpu_address;
+    wire        cpu_rnw;
+    wire reset_b = rst_n;
 
-    // Set the bidir as output
-    assign bidir_oe = '1;
-    assign bidir_cs = '0;
-    assign bidir_sl = '0;
-    assign bidir_ie = ~bidir_oe;
-    assign bidir_pu = '0;
-    assign bidir_pd = '0;
-    
-    logic _unused;
-    assign _unused = &bidir_in;
+    wire [NUM_INPUT_PADS-1:0] unused_inputs = input_in;
+    wire [NUM_BIDIR_PADS-17:0] unused_bidir = bidir_in[NUM_BIDIR_PADS-1:16];
 
-    logic [NUM_BIDIR_PADS-1:0] count;
+    assign cpu_datain = bidir_in[15:0];
 
-    always_ff @(posedge clk) begin
-        if (!rst_n) begin
-            count <= '0;
-        end else begin
-            if (&input_in) begin
-                count <= count + 1;
-            end
-        end
-    end
+    assign bidir_out[15:0]  = cpu_dataout;
+    assign bidir_out[31:16] = cpu_address;
+    assign bidir_out[32]    = cpu_rnw;
 
-    logic [7:0] sram_0_out;
+    assign bidir_oe[15:0]  = {16{!cpu_rnw}};
+    assign bidir_oe[31:16] = 16'hFFFF;
+    assign bidir_oe[32]    = 1'b1;
 
-    `gf180mcu_xxx_ip_sram__sram512x8m8wm1 sram_0 (
+    assign bidir_cs = {NUM_BIDIR_PADS{1'b0}};
+    assign bidir_sl = {NUM_BIDIR_PADS{1'b0}};
+    assign bidir_ie = {NUM_BIDIR_PADS{1'b1}};
+    assign bidir_pu = {NUM_BIDIR_PADS{1'b0}};
+    assign bidir_pd = {NUM_BIDIR_PADS{1'b0}};
+
+    assign input_pu = {NUM_INPUT_PADS{1'b0}};
+    assign input_pd = {NUM_INPUT_PADS{1'b0}};
+
+    assign bidir_out[NUM_BIDIR_PADS-1:33] = {(NUM_BIDIR_PADS-33){1'b0}};
+    assign bidir_oe[NUM_BIDIR_PADS-1:33]  = {(NUM_BIDIR_PADS-33){1'b0}};
+
+    wire [7:0] sram_q0, sram_q1;
+
+    (* keep *) gf180mcu_fd_ip_sram__sram512x8m8wm1 sram_0 (
         `ifdef USE_POWER_PINS
-        .VDD  (VDD),
-        .VSS  (VSS),
+        .VDD(VDD), .VSS(VSS),
         `endif
-
-        .CLK  (clk),
-        .CEN  (1'b1),
-        .GWEN (1'b0),
-        .WEN  (8'b0),
-        .A    ('0),
-        .D    ('0),
-        .Q    (sram_0_out)
+        .CLK(clk), .CEN(1'b1), .GWEN(1'b1), .WEN(8'hFF), 
+        .A(9'b0), .D(8'b0), .Q(sram_q0)
     );
 
-    logic [7:0] sram_1_out;
-
-    `gf180mcu_xxx_ip_sram__sram512x8m8wm1 sram_1 (
+    (* keep *) gf180mcu_fd_ip_sram__sram512x8m8wm1 sram_1 (
         `ifdef USE_POWER_PINS
-        .VDD  (VDD),
-        .VSS  (VSS),
+        .VDD(VDD), .VSS(VSS),
         `endif
-
-        .CLK  (clk),
-        .CEN  (1'b1),
-        .GWEN (1'b0),
-        .WEN  (8'b0),
-        .A    ('0),
-        .D    ('0),
-        .Q    (sram_1_out)
+        .CLK(clk), .CEN(1'b1), .GWEN(1'b1), .WEN(8'hFF), 
+        .A(9'b0), .D(8'b0), .Q(sram_q1)
     );
 
-    assign bidir_out = count ^ {24'd0, sram_0_out, sram_1_out};
+    as16 u_cpu (
+        .datain   (cpu_datain),
+        .dataout  (cpu_dataout),
+        .address  (cpu_address),
+        .rnw      (cpu_rnw),
+        .clk      (clk),
+        .reset_b  (reset_b)
+    );
 
 endmodule
-
 `default_nettype wire

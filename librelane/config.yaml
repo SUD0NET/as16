@@ -7,35 +7,15 @@ meta:
     KLayout.Render: null
     +KLayout.SealRing: KLayout.Render
 
-    # Disable KLayout DRC
-    #KLayout.DRC: null
-    #Checker.KLayoutDRC: null
-
-    # Disable KLayout antenna check
-    #KLayout.Antenna: null
-    #Checker.KLayoutAntenna: null
-
-    # Disable KLayout density check
-    #KLayout.Density: null
-    #Checker.KLayoutDensity: null
-
-    # Save time during development
-    # Enable for sign-off
-    #OpenROAD.IRDropReport: null
-    #Magic.DRC: null
-    #Checker.MagicDRC: null
-    #KLayout.XOR: null
-    #Netgen.LVS: null
-    #Checker.LVS: null
-
 DESIGN_NAME: chip_top
 VERILOG_FILES:
 - dir::../src/chip_top.sv
 - dir::../src/chip_core.sv
+- dir::../src/as16.v
 
-# Enable plugin for better SystemVerilog support
-# USE_SLANG: True
-# SLANG_ARGUMENTS: ['--keep-hierarchy']
+# Enable plugin for robust SystemVerilog syntax parsing
+USE_SLANG: True
+SLANG_ARGUMENTS: ['--keep-hierarchy']
 
 # Slightly smaller file sizes
 PRIMARY_GDSII_STREAMOUT_TOOL: klayout
@@ -158,14 +138,8 @@ KLAYOUT_RENDER_OVERSAMPLING: 3
 KLAYOUT_PROPERTIES: dir::gf180mcu_render.lyp
 
 # DRC settings
-# A high number of workers increases RAM usage,
-# but can significantly improve the performance.
-# workers * threads should equal the available
-# hardware threads for a best possible utilization.
-
 KLAYOUT_DRC_THREADS: 1
 
-# "max" equals max hardware threads
 KLAYOUT_DRC_OPTIONS:
   decks: "all,-antenna,-density,-cup" # disable CUP for now
   variant: ref::$PDK
