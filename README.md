@@ -1,3 +1,83 @@
+<img width="310" height="194.5" alt="image" src="https://github.com/user-attachments/assets/41d296c6-2150-4ffb-8347-0417e905415e" />
+
+# AS16: A 16-bit RISC CPU
+---
+The **AS16** is a custom 16-bit RISC-style processor core implemented in Verilog for the [wafer.space](https://wafer.space) GF180MCU Run 2 shuttle. It features hardware predication, a 16-entry general register file, and a 6-state FSM controller.
+
+---
+## Hardware Interface
+
+```verilog
+module as16(
+    input [15:0] datain,
+    output [15:0] dataout,
+    output [15:0] address,
+    output rnw,
+    input clk,
+    input reset_b
+);
+```
+* **`datain` / `dataout`**: 16-bit parallel data buses
+* **`address`**: 16-bit memory address pointer (`PC_q` or `OR_q`)
+* **`rnw`**: read/not-write control signal, active low during writes
+* **`clk` / `reset_b`**: rising-edge clock and asynchronous active-low reset
+
+---
+## Instruction Format
+
+Supports 16-bit `single-word` or 32-bit  `double-word` layout based on length bit `l`.
+
+```text
+ ppp l oooo ssss dddd   wwwwwwwwwwwwwwww
+  │  │   │    │    │            │
+  │  │   │    │    │            └─ 16b optional operand word
+  │  │   │    │    └──────────────  4b source/destination register
+  │  │   │    └───────────────────  4b source register
+  │  │   └────────────────────────  4b opcode
+  │  └────────────────────────────  1b instruction length
+  └───────────────────────────────  3b predicate bits
+```
+
+---
+
+## Architecture & Registers
+
+* **Registers**: 16 x 16b GRF. `R0` hardwired to `0`. `R15` acts as Program Counter (`PC_q`).
+* **Special Registers**: Instruction Register (`IR_q`) and Operand Register (`OR_q`).
+* **Predication**: Dynamic instruction skipping using bits `[15:13]` against Carry (`C_q`) and Zero flags.
+
+---
+## Instruction Set Architecture (ISA)
+
+The ALU selects its operations using bits `[10:8]` of the instruction register.
+
+| Opcode | Mnemonic | Operation | Description |
+| :--- | :--- | :--- | :--- |
+| `3'b000` | **LD** | `result = OR_q` | load value of operand register to destination register |
+| `3'b001` | **ADD** | `result = register + OR_q` | add source register to operand register |
+| `3'b010` | **AND** | `result = register & OR_q` | bitwise AND between register and operand register |
+| `3'b011` | **OR** | `result = register \| OR_q` | bitwise OR between register and operand register |
+| `3'b100` | **XOR** | `result = register ^ OR_q` | bitwise XOR between register and operand register |
+| `3'b101` | **ROR** | rotate right with carry | rotates operand register right by one bit through carry flag |
+| `3'b110` | **ADC** | `result = register + OR_q + C_q` | add with carry flag input |
+| `3'b111` | **STO** | `memory[OR_q] = register` | store source register value out to memory address in `OR_q` |
+
+---
+
+## Execution States (FSM)
+
+1. **`FETCH0`**: fetch base opcode word
+2. **`FETCH1`**: fetch 16-bit immediate extension word if needed
+3. **`EA_ED`**: calculate effective memory addresses
+4. **`RDMEM`**: read data from external memory
+5. **`EXEC`**: execute ALU operation and write back to registers
+6. **`WRMEM`**: write data to memory (`rnw` goes low)
+
+---
+
+Below is simply the README from the template:
+
+---
 # gf180mcu Project Template
 
 Project template for wafer.space MPW runs using the gf180mcu PDK.
