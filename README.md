@@ -1,4 +1,4 @@
-<img width="310" height="194.5" alt="image" src="https://github.com/user-attachments/assets/41d296c6-2150-4ffb-8347-0417e905415e" />
+<img width="512" height="329.5" alt="chip_top" src="https://github.com/user-attachments/assets/1cef3a6b-b9c3-469e-b66e-576e74c33c6b" />
 
 # AS16: A 16-bit RISC CPU
 ---
