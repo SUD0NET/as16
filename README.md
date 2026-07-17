@@ -28,7 +28,7 @@ module as16(
 Supports 16-bit `single-word` or 32-bit  `double-word` layout based on length bit `l`.
 
 ```text
- ppp l oooo sssm dddd   wwwwwwwwwwwwwwww
+ ppp l ooom ssss dddd   wwwwwwwwwwwwwwww
   │  │   │    │    │            │
   │  │   │    │    │            └─ 16b optional operand word
   │  │   │    │    └──────────────  4b source/destination register
