@@ -28,12 +28,12 @@ module as16(
 Supports 16-bit `single-word` or 32-bit  `double-word` layout based on length bit `l`.
 
 ```text
- ppp l oooo ssss dddd   wwwwwwwwwwwwwwww
+ ppp l oooo sssm dddd   wwwwwwwwwwwwwwww
   │  │   │    │    │            │
   │  │   │    │    │            └─ 16b optional operand word
   │  │   │    │    └──────────────  4b source/destination register
   │  │   │    └───────────────────  4b source register
-  │  │   └────────────────────────  4b opcode
+  │  │   └────────────────────────  3b opcode (there is modifier m at bit 8 for ADD/ADC, but still 3b opcode)
   │  └────────────────────────────  1b instruction length
   └───────────────────────────────  3b predicate bits
 ```
